@@ -7,6 +7,7 @@
     GEOMETRY=" -g 1600x830 " #DESKTOP GEOMETRY
     ADDRESS=$1
     PATH=`which rdesktop`
+    #Cheking if rdekstop is installed.
     if [[ -z $PATH ]]; then
         echo "rdesktop not installed!"
         exit -1
