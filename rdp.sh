@@ -1,10 +1,10 @@
 #!/bin/bash
 
     #PATH=`which rdesktop`
-    USER="-u a.ruzhitski "
+    USER="-u USER_NAME_HERE "
     PASS=" -p - "
-    DOMAIN=" -d IGC"
-    GEOMETRY=" -g 1600x830 "
+    DOMAIN=" -d DOMAIN_GERE"
+    GEOMETRY=" -g 1600x830 " #DESKTOP GEOMETRY
     ADDRESS=$1
     PATH=`which rdesktop`
     if [[ -z $PATH ]]; then
