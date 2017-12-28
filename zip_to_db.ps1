@@ -3,9 +3,9 @@
     $server_cons_update="C:\ServerUpdate\REPORTS"
     $server_cons_archive="\\server\c$\Arhiv"
     $server_cons_xml="\\server\xml$"
-    $temporary = "C:\Temp"
-    $cons_server = "\\cons-server\usr_inet"
-    $ConnectionString = "connections_string_here"
+    $temporary = "C:\ConsConverter\Temp"
+    $cons_server = "\\server\usr_inet"
+    $ConnectionString = "connection_string_should_be_here"
     $query ="INSERT INTO usr_inbox(usr_source, file_name, source) VALUES (?, ?, 'inet_dir')"
     $ErrorActionPreference = "Stop"
     $ErrCantOpenConnection = "Не могу открыть подключение к БД."
@@ -18,14 +18,20 @@
 
 
 ########################################################################  FUNCTIONS  SECTION   ##################################################################################
-    # Функция создает в EventLog'е Application источник $EventSrc, если его нет
-    # и пишет $data  в лог.
-    function Write-Log {
-    
+
+    #Проверяем, есть ли права админа. 
+    function Check-IsAdmin { 
+	(
+	    [Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
+	}
+	
+	
+
+    # Функция создает в EventLog'е Application источник $EvebtSrc, если его нет
+    # и пишет $data  в лог. ФУНКЦИЯ РАБОТАЕТ НАЧИНАЯ С POWERSHELL 3.0
+    function Write-Log { 
         Param ($data)
-        
         if ( -Not [System.Diagnostics.Eventlog]::SourceExists($EventSrc) ) {
-        
             New-EventLog -LogName "Application" -Source $EventSrc 
         }
 
@@ -53,53 +59,46 @@
             $thisSubKey=$reg.OpenSubKey($thisKey)   
 
             if ($thisSubKey.GetValue("DisplayName") -eq "7-Zip 16.04 (x64)" ) {
-            
                 return $thisSubKey.GetValue("InstallLocation")+  "7z.exe"
             }
         }
         return $null
     }
 
-    #Функция возвращает дескриптор открытого подключения если удалось его открыть, иначе выход
+    #Функция возвращает дескриптор подключения 
     function Connect-ToDb(){
         
         $connection = New-Object System.Data.Odbc.OdbcConnection
-        
         $connection.connectionstring=$ConnectionString 
-        
         $connection.Open() 
-        
         return $connection
     }
         
 
 #Данная функция
     function Push-ToDb($file, $DbConnection){
-        
+      
         if ( -Not ( $DbConnection.State -eq  [System.Data.ConnectionState]::Open) ){ # Если не открылось 
         
-              $DbConnection.Open() # пробуем еще раз
+              $DbConnection=Connect-ToDb # пробуем еще раз
               
               if ( -Not ( $DbConnection.State -eq  [System.Data.ConnectionState]::Open) ){ # Если не открылось снова, видимо не судьба и надо
               
-                  Write-Log ( $ErrCantOpenConnection ) #написать у лог
+                  #Write-Log ( $ErrCantOpenConnection ) #написать у лог
                   
-                  Remove-Item $file  #и зачистить свидетелей
+                  Remove-Item $file  # зачистить свидетелей
                   
-                  exit #выйти
+                  exit -2 #и выйти
               
               }
         } 
+		
+				
         $fileContentEncoded = [System.Convert]::ToBase64String((get-content $file -encoding byte)) #Кодирует содержимое файла в base64
-        
-        $FileName =  [System.IO.Path]::GetFileName($File) #Получает имя файла
-        
+        $FileName =  [System.IO.Path]::GetFileName($file) #Получает имя файла
         $OdbCommand = new-object System.Data.Odbc.OdbcCommand($query,$DbConnection)     #Инициализирует экземпляр класса, представляющий собой комманду к БД
-        
         $OdbCommand.Parameters.AddWithValue("@usr_source", $fileContentEncoded); #Подставляет нужные значения в комманду
-        
         $OdbCommand.Parameters.AddWithValue("@file_name",  $FileName);#Подставляет нужные значения в комманду #
-        
         $OdbCommand.ExecuteNonQuery() #Выполняет команду
        
     }
@@ -110,12 +109,13 @@
 
 #############################################################################  EXECUTION  SECTION   ##################################################################################
 
+    if (!(Check-IsAdmin)){ #Если скрипт запщуен без прав администратора выбрасываем исключение
+	    throw "Administrator rights required to run this script"
+ 	}
+
     $DateTime = Get-Date
-    
-    Write-Log ($MsgExecutionStarted + $DateTime)
-    
+   # Write-Log ($MsgExecutionStarted + $DateTime)
     $7zIsInstalled=Check-7zInstalled  # если 7z не установлен
-    
     if (!$7zIsInstalled )
     {
         Write-Log ($Err7zNotInstalled)
@@ -124,18 +124,21 @@
      Set-Alias SevenZip $7zIsInstalled
      
      $DbConnection=Connect-ToDb  #подключаемся к базе
+	# Write-Host $DbConnection
      
      $Archives=get-childitem $server_cons_update | where {$_.extension -eq ".zip"} | % { $_.FullName }
-     
         foreach ($archive in $Archives) {
             SevenZip e "$archive" "-o$temporary" "*.usr" -y    #разархивируем файл во временную директорию 
             
             $usr_file=get-childitem $temporary | where {$_.extension -eq ".usr"} | ForEach-Object -Process {$_.FullName} #получаем полный путь к файлу
             
-            foreach ($file in $usr_file){ # на случай если по какй т причине файлов несклько
+            if ($usr_file -eq $null){ #если вдруг по какой-то причине файлов в папке нет запускаем cледующий шаг цикла
+		        continue
+			}
+			
+            foreach ($file in $usr_file){ # на случай если по какй-то причине файлов несклько
                 
-                Push-ToDb($file,$DbConnection)    #пушим файл в БД
-                
+                Push-ToDb $file $DbConnection    #пушим файл в БД
                 Remove-Item $file   #удаляем временный файл
             
             }
@@ -147,9 +150,7 @@
         }
         
         $DbConnection.Close() # Закрываем соединение
-        
     $DateTime = Get-Date    
-    
-    Write-Log ($MsgExecutionEnded + $DateTime)
+  # Write-Log ($MsgExecutionEnded + $DateTime)
 
 ###########################################################################  END EXECUTION  SECTION   #####################################################################################
