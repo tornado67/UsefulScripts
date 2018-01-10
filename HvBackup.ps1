@@ -1,4 +1,4 @@
-$hvbackup="C:\Windows\System32\hvbackup\HVBackup.exe"
+	 $hvbackup="C:\Windows\System32\hvbackup\HVBackup.exe"
 	 $BackupPath="F:\backup"
 	 $OutputFormat = "{0}_{2:yyyy_MM_dd_HH}.zip"
 	  #поскольку в powershell 2.0 нет модуля для работы с HV, 
