@@ -1,7 +1,7 @@
 	 $hvbackup="C:\Windows\System32\hvbackup\HVBackup.exe"
 	 $BackupPath="F:\backup"
 	 $OutputFormat = "{0}_{2:yyyy_MM_dd_HH}.zip"
-	  #поскольку в powershell 2.0 нет модуля для работы с HV, 
+	  #поскольку в powershell 2.0 нет модуля для работы с HV, придется использовать WMI.
 	  function Get-VmNames(){ 
 	     #получаем списко виртуалок методом  wmi запроса.
 	    return $vms=Get-WMIObject -Class Msvm_ComputerSystem -Namespace "root\virtualization" | where-object{$_.caption -ne "Компьютерная система для размещения"} | ForEach-Object -Process {$_.ElementName}
