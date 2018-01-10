@@ -1,4 +1,4 @@
-	 $hvbackup="C:\Windows\System32\hvbackup\HVBackup.exe"
+$hvbackup="C:\Windows\System32\hvbackup\HVBackup.exe"
 	 $BackupPath="F:\backup"
 	 $OutputFormat = "{0}_{2:yyyy_MM_dd_HH}.zip"
 	  #поскольку в powershell 2.0 нет модуля для работы с HV, 
@@ -13,16 +13,23 @@
 		hvbackup -l "$name" -o "$BackupPath" --outputformat "$OutputFormat"
 	  }
 	 # зачистка старых бекапов. (Старый - сделанный при предыдущем проходе)
-	 function Rotate-Backups {
+	 
+         function Rotate-Backups {
 	      
-	     $backups = Get-ChildItem $BackupPath -Name "*.zip" #получаем список бекапов
-	     foreach ($backup in $backups) {
-	        $BackupCreationTime=(Get-ChildItem $backup ).CreationTime.Date   #узнаем когда сделан бекап
-	        if(-Not($BackupCreationTime -eq (get-date).Date )){    #если бекап сделан не сегодня
-				Write-Host "Removing $backup"
-	            Remove-Item $backup    #удалим его
-	        }
-	     }
+	     $BackupFileNames = Get-ChildItem $BackupPath -Name "*.zip" #получаем список бекапов
+		 foreach ($BackupFileName in $BackupFileNames)
+		 {
+			$BackupFullPath = "$BackupPath\$BackupFileName"
+			foreach ($Backup in $BackupFullPath){
+				$BackupCreationTime=(Get-ChildItem $Backup).CreationTime.Date 
+				 if(-Not($BackupCreationTime -eq (get-date).Date )){    #если бекап сделан не сегодня
+					Write-Host "Removing $backup"
+					Remove $backup    #удалим его
+		 		}
+		 	}
+		 
+	 	 }
+		 
 	 }
 	 
 	 foreach ($vm in Get-VmNames ){
@@ -31,5 +38,3 @@
      }
      
      Rotate-Backups
-		
-	
