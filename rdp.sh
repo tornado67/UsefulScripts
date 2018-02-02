@@ -3,7 +3,7 @@
     #PATH=`which rdesktop`
     USER="-u USER_NAME_HERE "
     PASS=" -p - "
-    DOMAIN=" -d DOMAIN_GERE"
+    DOMAIN=" -d DOMAIN_HERE"
     GEOMETRY=" -g 1600x830 " #DESKTOP GEOMETRY
     ADDRESS=$1
     PATH=`which rdesktop`
