@@ -1,2 +1,2 @@
 # UsefulScripts
-ust script that I write for myself.
+just scripts and code snippets, that I write for myself.
