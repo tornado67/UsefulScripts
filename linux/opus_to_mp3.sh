@@ -1,4 +1,11 @@
 #!/bin/bash
+# OpusDecode
+# Just a simple script that decodes WhatsApp's .opus files to .wav format
+# It requires opus-tools to be installed.
+# Tested under debian stretch.
+
+
+
 if [ "$#" -ne 1 ]; then
     echo "Illegal number of parameters"
     exit -1
