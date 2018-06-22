@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Extractig certain filds from a CSV file
+# Extractig certain fields from a CSV file
 
 OLDIFS=$IFS                                                                                                              
 IFS=";"                                                                                                                  
