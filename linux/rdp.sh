@@ -14,16 +14,3 @@
     fi
 
     `$PATH $USER $PASS $DOMAIN $GEOMETRY $ADDRESS`
-
-
-
-
-
-
-
-
-
-
-
-
-
