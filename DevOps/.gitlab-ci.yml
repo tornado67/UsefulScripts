@@ -1,0 +1,34 @@
+variables:
+   LANG: en_US.UTF-8
+   GIT_SSL_NO_VERIFY: "true"
+   GITLAB_URL: "https://harvester.rostselmash.com:6443/"
+   
+image: node:11
+stages:
+  - build
+  - deploy 
+
+build:
+  stage: build
+  before_script: 
+   - yarn install
+   - npm i eslint eslint-plugin-jsx-a11y  eslint-config-airbnb babel-eslint babel eslint-plugin-react eslint-plugin-import
+   - env
+   - export NODE_ENV="development"
+   - "[[ $CI_BUILD_REF_NAME =~ production|test ]] && export NODE_ENV=${CI_BUILD_REF_NAME}"
+   - env
+   - node_modules/eslint/bin/eslint.js .
+  script:
+   - CI=false yarn add https://gitlab-ci-token:${CI_JOB_TOKEN}@harvester.rostselmash.com:6443/service_tools/agrotronic_admin_js_sdk.git#develop
+   - CI=false yarn add https://gitlab-ci-token:${CI_JOB_TOKEN}@harvester.rostselmash.com:6443/service_tools/agrotronic_notifications.git#develop
+   - CI=false yarn build --env=test
+   
+  after_script:
+   - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+   - eval $(ssh-agent -s)
+   - echo "${SSH_DEPLOY_KEY}" | ssh-add - > /dev/null
+   - mkdir -p ~/.ssh
+   - chmod 700 ~/.ssh
+   - echo "${SSH_KNOWN_HOSTS}" > ~/.ssh/known_hosts
+   - chmod 644 ~/.ssh/known_hosts
+   - ssh -t root@${DEV_SERVER} "uname -a"
