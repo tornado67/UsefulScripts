@@ -1,0 +1,40 @@
+# sample compose file for running graphite + grafana
+version: '3'
+services:
+  graphite:
+    restart: always
+    image: "graphiteapp/graphite-statsd:tz-fix"
+    ports:
+      - "8091:80"
+      - "2003-2004:2003-2004"
+      - "2023-2024:2023-2024"
+      - "8125:8125/udp"
+      - "8126:8126"
+    environment:
+      - TZ=Europe/Moscow
+    volumes:
+      - "/opt/graphite/storage/:/opt/graphite/storage/"
+      - "/etc/ssl/certs/agrotronic/:/etc/rsmwild/"
+
+  grafana:
+    restart: always
+    image: "grafana/grafana"
+    ports:
+      - "3000:3000"
+    entrypoint:
+      - "/run.sh"
+    environment:
+      - "TZ=Europe/Moscow"
+      - "PATH=/usr/share/grafana/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+      - "GF_PATHS_CONFIG=/etc/grafana/grafana.ini"
+      - "GF_PATHS_DATA=/var/lib/grafana"
+      - "GF_PATHS_HOME=/usr/share/grafana"
+      - "GF_PATHS_LOGS=/var/log/grafana"
+      - "GF_PATHS_PLUGINS=/var/lib/grafana/plugins"
+      - "GF_PATHS_PROVISIONING=/etc/grafana/provisioning"
+
+    volumes:
+      - "/etc/grafana:/etc/grafana"
+      - "/var/lib/grafana:/var/lib/grafana"
+      - "/etc/ssl/certs/agrotronic:/etc/ssl/certs/agrotronic"
+~                                                                    
