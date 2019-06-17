@@ -4,7 +4,7 @@ services:
   graphite:
     restart: always 
     image: "graphiteapp/graphite-statsd:tz-fix"
-    container_name: graphite
+    container_name: graphite-test
     ports:
       - "8091:80"
       - "2003-2004:2003-2004"
@@ -13,13 +13,19 @@ services:
       - "8126:8126"
     environment:
       - TZ=Europe/Moscow
+      - LANG='en_US.UTF-8'
+      - LC_ALL='en_US.UTF-8'
     volumes:
       - "/opt/graphite/storage/:/opt/graphite/storage/"
-      - "/etc/ssl/certs/agrotronic/:/etc/rsmwild/"
+      - "/etc/ssl/certs/:/etc/rsmwild/"
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 500M
 
   grafana:
-    depends_on: 
-      - graphite
     restart: always 
     container_name: grafana-01
     image: "grafana/grafana"
@@ -28,16 +34,28 @@ services:
     entrypoint:
       - "/run.sh"
     environment:
-      - "TZ=Europe/Moscow"
+      - LANG='en_US.UTF-8'
+      - LC_ALL='en_US.UTF-8'
+      - TZ=Europe/Moscow
       - "PATH=/usr/share/grafana/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
       - "GF_PATHS_CONFIG=/etc/grafana/grafana.ini"
       - "GF_PATHS_DATA=/var/lib/grafana"
       - "GF_PATHS_HOME=/usr/share/grafana"
       - "GF_PATHS_LOGS=/var/log/grafana"
       - "GF_PATHS_PLUGINS=/var/lib/grafana/plugins"
-      - "GF_PATHS_PROVISIONING=/etc/grafana/provisioning" 
-
+      - "GF_PATHS_PROVISIONING=/etc/grafana/provisioning"
     volumes:
       - "/etc/grafana:/etc/grafana"
       - "/var/lib/grafana:/var/lib/grafana"
-      - "/etc/ssl/certs/agrotronic:/etc/ssl/certs/agrotronic"
+      - "/etc/ssl/certs/:/etc/ssl/certs/"
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 500M
+
+networks:
+  default:
+    external:
+      name: bridge
