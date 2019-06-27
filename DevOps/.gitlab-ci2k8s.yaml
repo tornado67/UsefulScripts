@@ -1,0 +1,35 @@
+variables:
+   LANG: en_US.UTF-8
+   GIT_SSL_NO_VERIFY: "true"
+   GITLAB_URL: "https://harvester.rostselmash.com:6443/"
+   UNTAR_PATH: /tmp/alphatest
+   DOCKER_TAG: 'agro3.rostselmash.com:30500/admin_client:latest'
+   TAR: /tmp/admin-client-alpha.tar.gz
+   USER: root
+   
+image: node:11
+stages:
+  - build
+  - build-image
+
+build:
+  stage: build
+  before_script: 
+   - apt-get update -qq && apt-get install
+   - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+   - eval $(ssh-agent -s)
+   - echo "$SSH_DEPLOY_KEY" | tr -d '\r' | ssh-add - > /dev/null
+   - 'mkdir -p ~/.ssh && chmod 700 ~/.ssh  && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+   #- export NODE_ENV="development"
+   #- "[[ $CI_BUILD_REF_NAME =~ production|test ]] && export NODE_ENV=${CI_BUILD_REF_NAME}"
+   #- node_modules/eslint/bin/eslint.js .
+  script:
+   - tar czf $CI_PROJECT_DIR/build.tar.gz ./*
+   - "scp $CI_PROJECT_DIR/build.tar.gz  $USER@agro3.rostselmash.com:$TAR"
+   - "ssh -tt $USER@agro3.rostselmash.com \"mkdir -p $UNTAR_PATH  && tar xf /tmp/admin-client-alpha.tar.gz -C $UNTAR_PATH\" "
+   - ssh -tt $USER@agro3.rostselmash.com "cd $UNTAR_PATH && docker build -t $DOCKER_TAG --build-arg CI_JOB_TOKEN=${CI_JOB_TOKEN}  . "
+   - ssh -tt $USER@agro3.rostselmash.com "cd $UNTAR_PATH && docker push $DOCKER_TAG "
+   - ssh -tt $USER@agro3.rostselmash.com "helm delete --purge admin-client && helm install $UNTAR_PATH/helm/nodeserver --name admin-client"
+   
+  after_script:
+   - ssh -tt $USER@agro3.rostselmash.com "rm -rf $UNTAR_PATH; rm -rf $TAR"
